@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+analysis/cache/
+build/
+cmake-build-*/
+.cache/
+*.npy
+*.npz
+!analysis/results/**

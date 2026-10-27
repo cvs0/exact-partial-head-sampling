@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - compiler: g++
+            build_type: Debug
+            sanitizers: "ON"
+          - compiler: clang++
+            build_type: Debug
+            sanitizers: "ON"
+          - compiler: g++
+            build_type: Release
+            sanitizers: "OFF"
+          - compiler: clang++
+            build_type: Release
+            sanitizers: "OFF"
+    steps:
+      - uses: actions/checkout@v4
+      - name: install
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build g++ clang clang-format libclang-rt-dev
+      - name: format
+        run: |
+          find include src tests bench -name '*.hpp' -o -name '*.cpp' -o -name '*.h' \
+            | xargs clang-format --dry-run --Werror
+      - name: configure
+        env:
+          CXX: ${{ matrix.compiler }}
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DEPHS_SANITIZERS=${{ matrix.sanitizers }}
+      - name: build
+        run: cmake --build build
+      - name: test
+        run: ctest --test-dir build --output-on-failure
